@@ -1,4 +1,4 @@
-module github.com/cert-manager/webhook-example
+module github.com/cert-manager/cert-manager-webhook-dynu
 
 go 1.13
 
