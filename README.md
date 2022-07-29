@@ -12,7 +12,10 @@ This is a webhook solver for [Dynu](https://www.dynu.com/).
 ## Installation
 
 ```bash
-helm install ./deploy/dynu-webhook
+helm repo add cert-manager-dynu-webhook \
+ https://anon-software.github.io/cert-manager-webhook-dynu
+helm repo update
+helm install cert-manager-dynu-webhook/dynu-webhook
 ```
 
 ## Certificate Issuer
