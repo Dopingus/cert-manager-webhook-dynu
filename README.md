@@ -27,19 +27,20 @@ helm install ./deploy/dynu-webhook
     ```
 
     The `secretName` can also be changed in `deploy/dynu-webhook/values.yaml` in case you have to follow some convention. 
+    The secret must be created in the same namespace as the webhook.
 
 3. Create a certificate issuer:
 
-    ```yaml
-    apiVersion: cert-manager.io/v1alpha2
-    kind: ClusterIssuer
-    metadata:
-        name: letsencrypt-dynu-<YOUR_ISSUER_NAME>
-    spec:
-        acme:
-        # The ACME server URL
-        server: https://acme-v02.api.letsencrypt.org/directory              # Use this for prod
-        # server: https://acme-staging-v02.api.letsencrypt.org/directory    # Use this for staging/testing
+```yaml
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-dynu-<YOUR_ISSUER_NAME>
+spec:
+  acme:
+    # The ACME server URL
+    server: https://acme-v02.api.letsencrypt.org/directory              # Use this for prod
+    # server: https://acme-staging-v02.api.letsencrypt.org/directory    # Use this for staging/testing
 
 
     # Email address used for ACME registration
@@ -59,14 +60,14 @@ helm install ./deploy/dynu-webhook
               secretName: dynu-secret # Adjust this in case you changed the secretName
               zoneName: <YOUR_DOMAIN> # Add the domain which you want to create certiciates for
               apiUrl: https://api.dynu.com/v2
-    ```
+```
 
 ## Certificate
 
 Issuing a certificate:
 
 ```yaml
-apiVersion: cert-manager.io/v1alpha2
+apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: <CERTIFICATE_NAME>  # Replace with a name of your choice
