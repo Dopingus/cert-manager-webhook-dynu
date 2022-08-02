@@ -15,8 +15,6 @@ This is a webhook solver for [Dynu](https://www.dynu.com/).
 helm install ./deploy/dynu-webhook
 ```
 
-Alternatively, modify the `groupName` in `deploy/dynu-webhook/values.yaml`.
-
 ## Certificate Issuer
 
 1. Generate an API Key at [Dynu](https://www.dynu.com/en-US/ControlPanel/APICredentials)
