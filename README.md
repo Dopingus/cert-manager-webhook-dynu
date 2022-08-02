@@ -11,14 +11,9 @@ This is a webhook solver for [Dynu](https://www.dynu.com/).
 
 ## Installation
 
-Define a unique group name for your company or organization (i.e. `acme.mycompany.mydomain`)
-
 ```bash
-helm install ./deploy/dynu-webhook \
- --set groupName='<YOUR_GROUP_NAME>'
+helm install ./deploy/dynu-webhook
 ```
-
-Alternatively, modify the `groupName` in `deploy/dynu-webhook/values.yaml`.
 
 ## Certificate Issuer
 
