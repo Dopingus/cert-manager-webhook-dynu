@@ -62,7 +62,6 @@ spec:
             config:
               secretName: dynu-secret # Adjust this in case you changed the secretName
               zoneName: <YOUR_DOMAIN> # Add the domain which you want to create certiciates for
-              apiUrl: https://api.dynu.com/v2
 ```
 
 ## Certificate

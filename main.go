@@ -24,6 +24,10 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/acme/webhook/cmd"
 )
 
+const (
+	apiUrl = "https://api.dynu.com/v2"
+)
+
 type DnsRecordResponse struct {
 	DnsRecords []DnsRecord `json:"dnsRecords"`
 }
@@ -69,7 +73,6 @@ type dynuDNSProviderSolver struct {
 type dynuDNSProviderConfig struct {
 	SecretRef string `json:"secretName"`
 	ZoneName  string `json:"zoneName"`
-	ApiUrl    string `json:"apiUrl"`
 }
 
 func (c *dynuDNSProviderSolver) Name() string {
@@ -86,7 +89,6 @@ func (c *dynuDNSProviderSolver) Present(ch *v1alpha1.ChallengeRequest) error {
 	klog.Infof("Decoded configuration %v", cfg)
 
 	secretName := cfg.SecretRef
-	apiUrl := cfg.ApiUrl
 	sec, err := c.client.CoreV1().Secrets(ch.ResourceNamespace).Get(context.TODO(), secretName, metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("unable to get secret `%s/%s ; %v`", secretName, ch.ResourceNamespace, err)
@@ -97,7 +99,7 @@ func (c *dynuDNSProviderSolver) Present(ch *v1alpha1.ChallengeRequest) error {
 		return fmt.Errorf("unable to get api-key from secret %v", err)
 	}
 	zoneName := cfg.ZoneName
-	zoneId, err := getZoneIdFromZoneName(apiUrl, apiKey, zoneName)
+	zoneId, err := getZoneIdFromZoneName(apiKey, zoneName)
 	if err != nil {
 		return err
 	}
@@ -106,9 +108,9 @@ func (c *dynuDNSProviderSolver) Present(ch *v1alpha1.ChallengeRequest) error {
 	baseRecordName := determineBaseRecordName(recordName)
 
 	// For requested record
-	addTxtRecord(apiUrl, apiKey, zoneId, recordName, ch)
+	addTxtRecord(apiKey, zoneId, recordName, ch)
 	// For record name without _acme-challenge as well (DNS propagation is checked through this name)
-	addTxtRecord(apiUrl, apiKey, zoneId, baseRecordName, ch)
+	addTxtRecord(apiKey, zoneId, baseRecordName, ch)
 
 	klog.Infof("Presented txt record %v", ch.ResolvedFQDN)
 
@@ -129,7 +131,6 @@ func (c *dynuDNSProviderSolver) CleanUp(ch *v1alpha1.ChallengeRequest) error {
 	if err != nil {
 		return err
 	}
-	apiUrl := cfg.ApiUrl
 	secretName := cfg.SecretRef
 	sec, err := c.client.CoreV1().Secrets(ch.ResourceNamespace).Get(context.TODO(), secretName, metav1.GetOptions{})
 	if err != nil {
@@ -141,12 +142,12 @@ func (c *dynuDNSProviderSolver) CleanUp(ch *v1alpha1.ChallengeRequest) error {
 	}
 
 	zoneName := cfg.ZoneName
-	zoneId, err := getZoneIdFromZoneName(apiUrl, apiKey, zoneName)
+	zoneId, err := getZoneIdFromZoneName(apiKey, zoneName)
 	if err != nil {
 		return fmt.Errorf("unable to retrieve zoneId for zoneName %s ; %v", zoneName, err)
 	}
 
-	dnsRecords, err := getRecordsForDomain(apiUrl, apiKey, zoneId)
+	dnsRecords, err := getRecordsForDomain(apiKey, zoneId)
 	if err != nil {
 		return fmt.Errorf("unable to get DNS records %v", err)
 	}
@@ -160,7 +161,7 @@ func (c *dynuDNSProviderSolver) CleanUp(ch *v1alpha1.ChallengeRequest) error {
 	for i := len(dnsRecordsResponse.DnsRecords) - 1; i >= 0; i-- {
 		klog.Infof("TXT entry with content %s (key value %s)", dnsRecordsResponse.DnsRecords[i].Content, ch.Key)
 		if dnsRecordsResponse.DnsRecords[i].RecordType == "TXT" && dnsRecordsResponse.DnsRecords[i].TextData == ch.Key {
-			deleteResponse, err := deleteTxtRecord(apiUrl, apiKey, zoneId, dnsRecordsResponse.DnsRecords[i].Id)
+			deleteResponse, err := deleteTxtRecord(apiKey, zoneId, dnsRecordsResponse.DnsRecords[i].Id)
 			if err != nil {
 				klog.Error(err)
 			}
@@ -206,7 +207,7 @@ func determineRecordName(zoneName string, fqdn string) string {
 	return name[1]
 }
 
-func getZoneIdFromZoneName(apiUrl string, apiKey string, zoneName string) (string, error) {
+func getZoneIdFromZoneName(apiKey string, zoneName string) (string, error) {
 	url := apiUrl + "/dns"
 	response, err := callDnsApi(url, "GET", nil, apiKey)
 	if err != nil {
@@ -236,7 +237,7 @@ func stringFromSecretData(secretData *map[string][]byte, key string) (string, er
 	return string(data), nil
 }
 
-func addTxtRecord(apiUrl string, apiKey string, zoneId string, recordName string, ch *v1alpha1.ChallengeRequest) {
+func addTxtRecord(apiKey string, zoneId string, recordName string, ch *v1alpha1.ChallengeRequest) {
 	requestbody := map[string]string{
 		"nodeName":   recordName,
 		"recordType": "TXT",
@@ -254,14 +255,14 @@ func addTxtRecord(apiUrl string, apiKey string, zoneId string, recordName string
 	klog.Infof("Added TXT record result: %s", string(response))
 }
 
-func getRecordsForDomain(apiUrl string, apiKey string, zoneId string) ([]byte, error) {
+func getRecordsForDomain(apiKey string, zoneId string) ([]byte, error) {
 	url := apiUrl + "/dns/" + zoneId + "/record"
 	response, err := callDnsApi(url, "GET", nil, apiKey)
 
 	return response, err
 }
 
-func deleteTxtRecord(apiUrl string, apiKey string, zoneId string, recordId int) (string, error) {
+func deleteTxtRecord(apiKey string, zoneId string, recordId int) (string, error) {
 	url := apiUrl + "/dns/" + zoneId + "/record/" + fmt.Sprint(recordId)
 	response, err := callDnsApi(url, "DELETE", nil, apiKey)
 
