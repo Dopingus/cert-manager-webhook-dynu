@@ -1,5 +1,3 @@
 {
-    "secretName": "dynu-secret",
-	"zoneName": "yourdomain.managedby.dynu",
-	"apiUrl": "https://api.dynu.com/v2"
+	"secretName": "dynu-secret"
 }

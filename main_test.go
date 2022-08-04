@@ -38,7 +38,6 @@ func TestRunsSuite(t *testing.T) {
 		//dns.SetDNSServer("ns4.dynu.com:53"),
 		dns.SetManifestPath("testdata/dynu/dynu-secret.yaml"),
 		dns.SetConfig(&extapi.JSON{ Raw: d, }),
-
 	)
 
 	//need to uncomment and  RunConformance delete runBasic and runExtended once https://github.com/cert-manager/cert-manager/pull/4835 is merged
