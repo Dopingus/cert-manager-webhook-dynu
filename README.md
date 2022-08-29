@@ -13,9 +13,9 @@ This is a webhook solver for [Dynu](https://www.dynu.com/).
 
 ```bash
 helm repo add cert-manager-dynu-webhook \
- https://anon-software.github.io/cert-manager-webhook-dynu
+ https://dopingus.github.io/cert-manager-webhook-dynu
 helm repo update
-helm install cert-manager-dynu-webhook/dynu-webhook
+helm install cert-manager-dynu-webhook cert-manager-dynu-webhook/dynu-webhook
 ```
 
 ## Certificate Issuer
@@ -57,7 +57,7 @@ spec:
       - dns01:
           cnameStrategy: Follow
           webhook:
-            groupName: <YOUR_GROUP_NAME> # Use the groupName defined above
+            groupName: com.github.dopingus.cert-manager-webhook-dynu
             solverName: dynu
             config:
               secretName: dynu-secret # Adjust this in case you changed the secretName
