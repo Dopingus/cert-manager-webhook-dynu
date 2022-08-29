@@ -57,7 +57,7 @@ spec:
       - dns01:
           cnameStrategy: Follow
           webhook:
-            groupName: <YOUR_GROUP_NAME> # Use the groupName defined above
+            groupName: com.github.dopingus.cert-manager-webhook-dynu
             solverName: dynu
             config:
               secretName: dynu-secret # Adjust this in case you changed the secretName
