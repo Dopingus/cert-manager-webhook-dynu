@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -43,11 +44,33 @@ type DnsRecord struct {
 	TextData   string `json:"textData"`
 }
 
-type DomainResponse struct {
+type DNSRootResponse struct {
 	Id         int    `json:"id"`
 	DomainName string `json:"domainName"`
 	Hostname   string `json:"hostname"`
 	Node       string `json:"node"`
+}
+
+type DomainRecordResponse struct {
+    Domains []Domain `json:"domains"`
+}
+
+type Domain struct {
+	Id                 int    `json:"id"`
+	Name               string `json:"name"`
+	UnicodeName        string `json:"unicodeName"`
+	Token              string `json:"token"`
+	State              string `json:"state"`
+	Group              string `json:"group"`
+	Ipv4Address        string `json:"ipv4Address"`
+	Ipv6Address        string `json:"ipv6Address"`
+	Ttl                int    `json:"ttl"`
+	Ipv4               bool   `json:"ipv4"`
+	Ipv6               bool   `json:"ipv6"`
+	Ipv4WildcardAlias  bool   `json:"ipv4WildcardAlias"`
+	Ipv6WildcardAlias  bool   `json:"ipv6WildcardAlias"`
+	CreatedOn          string `json:"createdOn"`
+	UpdatedOn          string `json:"updatedOn"`
 }
 
 var GroupName = os.Getenv("GROUP_NAME")
@@ -147,6 +170,7 @@ func (c *dynuDNSProviderSolver) Present(ch *v1alpha1.ChallengeRequest) error {
 }
 
 func determineBaseRecordName(recordName string) string {
+	klog.Infof("call function determineBaseRecordName: recordName=%s", recordName)
 	splitRecordName := strings.SplitN(recordName, ".", 2)
 	if len(splitRecordName) > 1 {
 		return splitRecordName[len(splitRecordName)-1]
@@ -167,6 +191,7 @@ func (c *dynuDNSProviderSolver) CleanUp(ch *v1alpha1.ChallengeRequest) error {
 		return err
 	}
 	secretName := cfg.SecretRef
+	
 	sec, err := c.client.CoreV1().Secrets(ch.ResourceNamespace).Get(context.TODO(), secretName, metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("unable to get secret `%s/%s ; %v`", secretName, ch.ResourceNamespace, err)
@@ -243,6 +268,7 @@ func loadConfig(cfgJSON *extapi.JSON) (dynuDNSProviderConfig, error) {
 }
 
 func getDomainIdFromFQDN(apiKey string, ResolvedFQDN string) (string, string, error) {
+	klog.Infof("call function getDomainIdFromFQDN: apiKey=%s, ResolvedFQDN=%s", apiKey, ResolvedFQDN)
 	hostname := util.UnFqdn(ResolvedFQDN)
 	url := apiUrl + "/dns/getroot/" + hostname
 	response, err := callDnsApi(url, "GET", nil, apiKey)
@@ -250,12 +276,58 @@ func getDomainIdFromFQDN(apiKey string, ResolvedFQDN string) (string, string, er
 		return "", "", err
 	}
 
-	domainResponse := DomainResponse{}
-	readErr := json.Unmarshal(response, &domainResponse)
+	dnsrootResponse := DNSRootResponse{}
+	readErr := json.Unmarshal(response, &dnsrootResponse)
 	if readErr != nil {
 		return "", "", readErr
 	}
-	return fmt.Sprint(domainResponse.Id), domainResponse.Node, nil
+
+	// set root response domain values as default
+	domainId := dnsrootResponse.Id
+	domainNode := dnsrootResponse.Node
+
+	// adding logic here of a simple test to determine if the node has a portion of domain identifier by checking for a period
+	if strings.Contains(dnsrootResponse.Node, ".") {
+		klog.Infof("Return node name shows that a subdomain more have been specified: Node=%s", dnsrootResponse.Node)
+		
+		matchName := false
+
+		// get a list of the domains for the API key to check for subdomain match
+		domainRecords, err := getDomains(apiKey)
+		if err != nil {
+			return fmt.Sprint(domainId), domainNode, fmt.Errorf("unable to get Domain records %v", err)
+		}
+		domainRecordsResponse := DomainRecordResponse{}
+		readErr := json.Unmarshal(domainRecords, &domainRecordsResponse)
+	
+		if readErr != nil {
+			return fmt.Sprint(domainId), domainNode, fmt.Errorf("unable to unmarshal response %v", readErr)
+		}
+
+		// get the subdomain value by seperating the end node element from other identifier portion (need to add logic to be more clever for various depth subdomain support)
+		nameSection := strings.SplitN(dnsrootResponse.Node, ".", 2)
+		subDomain := nameSection[1] + "." + dnsrootResponse.DomainName
+
+		for i := len(domainRecordsResponse.Domains) - 1; i >= 0; i-- {
+			klog.Infof("Checking domain %s with subdmain %s", domainRecordsResponse.Domains[i].Name, subDomain)
+
+			// if subdomain value found overwrite root domain values with new domain and exit loop
+			if domainRecordsResponse.Domains[i].Name == subDomain {
+				klog.Infof("Subdomain match found")
+				matchName = true
+				domainId = domainRecordsResponse.Domains[i].Id
+				domainNode = nameSection[0]
+				break
+			}
+		}
+
+		if !matchName{
+			klog.Infof("Sub domain match not found")
+		}
+	}
+
+	klog.Infof("Domain Detail: id=%s, node=%s", strconv.Itoa(domainId), domainNode)
+	return fmt.Sprint(domainId), domainNode, nil
 }
 
 func stringFromSecretData(secretData *map[string][]byte, key string) (string, error) {
@@ -282,6 +354,14 @@ func addTxtRecord(apiKey string, domainId string, recordName string, ch *v1alpha
 		klog.Error(err)
 	}
 	klog.Infof("Added TXT record result: %s", string(response))
+}
+
+// Get a list of the Domains associated with the API to allow for an enumerated check (DYNU API does not have any subdomain filtering)
+func getDomains(apiKey string) ([]byte, error){
+	url := apiUrl + "/dns"
+	response, err := callDnsApi(url, "GET", nil, apiKey)
+
+	return response, err
 }
 
 func getRecordsForDomain(apiKey string, domainId string) ([]byte, error) {
