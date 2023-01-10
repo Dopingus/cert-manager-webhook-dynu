@@ -22,10 +22,10 @@ helm install cert-manager-dynu-webhook cert-manager-dynu-webhook/dynu-webhook
 
 1. Generate an API Key at [Dynu](https://www.dynu.com/en-US/ControlPanel/APICredentials)
 
-2. Create a secret to store your application secret:
+2. Create a secret to store your application secret, secret needs to be in same namespace as cert-manager if using a clusterissuer. Issuer is namespace scoped so secret needs to be localised with issuer:
 
     ```bash
-    kubectl create secret generic dynu-secret \
+    kubectl create secret generic dynu-secret -n '<cert-manager namespace>' \
       --from-literal=api-key='<DYNU_API_KEY>'
     ```
 
