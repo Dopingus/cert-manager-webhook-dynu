@@ -2,12 +2,26 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: {{ include "dynu-webhook.fullname" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
     app: {{ include "dynu-webhook.name" . }}
     chart: {{ include "dynu-webhook.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
+
 ---
+
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/service-account-token
+metadata:
+  name: {{ include "dynu-webhook.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    kubernetes.io/service-account.name: "{{ include "dynu-webhook.fullname" . }}"
+
+---
+
 # Grant the webhook permission to read the ConfigMap containing the Kubernetes
 # apiserver's requestheader-ca-certificate.
 # This ConfigMap is automatically created by the Kubernetes apiserver.
@@ -30,6 +44,7 @@ subjects:
     kind: ServiceAccount
     name: {{ include "dynu-webhook.fullname" . }}
     namespace: {{ .Release.Namespace }}
+
 ---
 # apiserver gets the auth-delegator role to delegate auth decisions to
 # the core apiserver
@@ -51,6 +66,7 @@ subjects:
     kind: ServiceAccount
     name: {{ include "dynu-webhook.fullname" . }}
     namespace: {{ .Release.Namespace }}
+
 ---
 # Grant cert-manager permission to validate using our apiserver
 apiVersion: rbac.authorization.k8s.io/v1
@@ -70,6 +86,7 @@ rules:
     verbs:
       - 'create'
 ---
+
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -87,7 +104,8 @@ subjects:
   - apiGroup: ""
     kind: ServiceAccount
     name: {{ .Values.certManager.serviceAccountName }}
-    namespace: {{ .Release.Namespace }}
+    namespace: {{ .Values.certManager.namespace }}
+
 ---
 # Grant cert-manager permission to read secrets from cert-manager ns (i.e. to read the api key for dynu)
 apiVersion: rbac.authorization.k8s.io/v1
@@ -125,8 +143,7 @@ subjects:
   - apiGroup: ""
     kind: ServiceAccount
     name: {{ .Values.certManager.serviceAccountName }}
-    namespace: {{ .Release.Namespace }}    
-
+    namespace: {{ .Values.certManager.namespace }}
 
 
 ---
