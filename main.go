@@ -1,3 +1,4 @@
+
 package main
 
 import (
@@ -309,9 +310,6 @@ func getDomainIdFromFQDN(apiKey string, ResolvedFQDN string) (string, string, er
 		nameSection := strings.SplitN(dnsrootResponse.Node, ".", elements + 1)
 		subDomain := nameSection[elements] + "." + dnsrootResponse.DomainName
 
-		//nameSection := strings.SplitN(dnsrootResponse.Node, ".", 2)
-		//subDomain := nameSection[1] + "." + dnsrootResponse.DomainName
-
 		for i := len(domainRecordsResponse.Domains) - 1; i >= 0; i-- {
 			klog.Infof("Checking domain %s with subdmain %s", domainRecordsResponse.Domains[i].Name, subDomain)
 
@@ -320,6 +318,7 @@ func getDomainIdFromFQDN(apiKey string, ResolvedFQDN string) (string, string, er
 				klog.Infof("Subdomain match found")
 				matchName = true
 				domainId = domainRecordsResponse.Domains[i].Id
+				// domainNode for subdomamin is comprised of the initial node minus the one leve domain identifier matched
 				domainNode = strings.TrimSuffix(dnsrootResponse.Node, "." + nameSection[elements])
 				break
 			}
