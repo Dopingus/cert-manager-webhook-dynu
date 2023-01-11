@@ -305,8 +305,12 @@ func getDomainIdFromFQDN(apiKey string, ResolvedFQDN string) (string, string, er
 		}
 
 		// get the subdomain value by seperating the end node element from other identifier portion (need to add logic to be more clever for various depth subdomain support)
-		nameSection := strings.SplitN(dnsrootResponse.Node, ".", 2)
-		subDomain := nameSection[1] + "." + dnsrootResponse.DomainName
+		elements := strings.Count(dnsrootResponse.Node, ".")
+		nameSection := strings.SplitN(dnsrootResponse.Node, ".", elements + 1)
+		subDomain := nameSection[elements] + "." + dnsrootResponse.DomainName
+
+		//nameSection := strings.SplitN(dnsrootResponse.Node, ".", 2)
+		//subDomain := nameSection[1] + "." + dnsrootResponse.DomainName
 
 		for i := len(domainRecordsResponse.Domains) - 1; i >= 0; i-- {
 			klog.Infof("Checking domain %s with subdmain %s", domainRecordsResponse.Domains[i].Name, subDomain)
@@ -316,7 +320,7 @@ func getDomainIdFromFQDN(apiKey string, ResolvedFQDN string) (string, string, er
 				klog.Infof("Subdomain match found")
 				matchName = true
 				domainId = domainRecordsResponse.Domains[i].Id
-				domainNode = nameSection[0]
+				domainNode = strings.TrimSuffix(dnsrootResponse.Node, "." + nameSection[elements])
 				break
 			}
 		}
