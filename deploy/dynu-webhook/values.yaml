@@ -13,7 +13,7 @@ certManager:
   serviceAccountName: cert-manager
 
 image:
-  repository: docker.io/davlloyd/cert-manager-webhook-dynu
+  repository: docker.io/dopingus/cert-manager-webhook-dynu
   tag: latest
   pullPolicy: Always
 
