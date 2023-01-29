@@ -104,7 +104,7 @@ subjects:
   - apiGroup: ""
     kind: ServiceAccount
     name: {{ .Values.certManager.serviceAccountName }}
-    namespace: {{ .Values.certManager.namespace }}
+    namespace: {{ .Release.Namespace }}
 
 ---
 # Grant cert-manager permission to read secrets from cert-manager ns (i.e. to read the api key for dynu)
@@ -140,11 +140,6 @@ subjects:
     kind: ServiceAccount
     name: {{ include "dynu-webhook.fullname" . }}
     namespace: {{ .Release.Namespace }}
-  - apiGroup: ""
-    kind: ServiceAccount
-    name: {{ .Values.certManager.serviceAccountName }}
-    namespace: {{ .Values.certManager.namespace }}
-
 
 ---
 
