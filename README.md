@@ -7,7 +7,9 @@ This is a webhook solver for [Dynu](https://www.dynu.com/).
 * tested with 0.13.0 (might also work for older versions)
 * tested with
   - Cert-Manager v1.6.0 & 1.9.1 operator
-  - Kubernetes v1.21.1 / OpenShift 4.8.15 & k8s 1.24.8
+  - Kubernetes v1.21.1 / OpenShift 4.8.15 
+  - Kubernetes v1.24.8
+  - Kubernetes v1.25.4 / OpenShift 4.12.6 + cert-manager Operator for Red Hat OpenShift 1.10.2
 
 ## Installation
 
