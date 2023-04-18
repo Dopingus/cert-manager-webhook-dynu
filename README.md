@@ -24,17 +24,26 @@ helm install cert-manager-dynu-webhook cert-manager-dynu-webhook/dynu-webhook
 
 1. Generate an API Key at [Dynu](https://www.dynu.com/en-US/ControlPanel/APICredentials)
 
-2. Create a secret to store your application secret, secret needs to be in same namespace as cert-manager if using a clusterissuer. Issuer is namespace scoped so secret needs to be localised with issuer:
+2. Create a secret to store your dynu API key.  The secret needs to be in same namespace as cert-manager if using a ClusterIssuer. Issuer is namespace scoped so secret needs to be localised with issuer:
 
     ```bash
-    kubectl create secret generic dynu-secret -n '<cert-manager namespace>' \
-      --from-literal=api-key='<DYNU_API_KEY>'
+    kubectl create secret generic dynu-secret -n cert-manager --from-literal=api-key='<DYNU_API_KEY>'
     ```
 
     The `secretName` can also be changed in `deploy/dynu-webhook/values.yaml` in case you have to follow some convention. 
     The secret must be created in the same namespace as the webhook.
 
-3. Create a certificate issuer:
+3. Create a Letsencrypt Account key using (acme.sh)[https://github.com/acmesh-official/acme.sh]
+
+     ```acme.sh --server letsencrypt --create-account-key
+     ```
+4. Create a secret to store the Letsencrypt key.
+
+     ```bash
+     kubectl create secret generic letsencrypt-secret -n cert-manager --from-file=api-key=~/.acme.sh/ca/acme-v02.api.letsencrypt.org/directory/account.key
+     ```
+     
+5. Create a ClusterIssuer yaml file, letsencrypt-dynu-cluster-issuer.yaml:
 
 ```yaml
 apiVersion: cert-manager.io/v1
@@ -53,7 +62,7 @@ spec:
 
     # Name of a secret used to store the ACME account private key
     privateKeySecretRef:
-      name: <YOUR_SECRET_NAME>
+      name: letsencrypt-secret
 
     solvers:
       - dns01:
@@ -64,6 +73,10 @@ spec:
             config:
               secretName: dynu-secret # Adjust this in case you changed the secretName
 ```
+6. Create the ClusterIssuer:
+
+    ```
+    kubectl apply -f letsencrypt-dynu-cluster-issuer.yaml
 
 ## Certificate
 
