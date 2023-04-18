@@ -114,7 +114,25 @@ spec:
    ```bash
    watch kubectl get certificates -n openshift-ingress
    ```
+## Use the Certificate
 
+1. Patch the openshift-ingress-operator to use the new certificate:
+
+    ```bash
+    kubectl patch --type=merge ingresscontrollers/default --patch '{"spec":{"defaultCertificate":{"name":"router-certs-letsencrypt"}}}' -n openshift-ingress
+    ```
+2. Watch to ensure the router pod with the new cert has been started:
+
+    ```bash
+    watch oc get pod -n openshift-ingress
+    ```
+
+3. Verify that the pod is using the new cert:
+
+    ```bash
+    openssl s_client -showcerts -servername console-openshift-console.apps.<cluster name>.<domain name> -connect console-openshift-console.apps.ocp49-022100.alchan.nasatam.support:443
+    ```
+    
 ## Development
 
 see [webhook-example](https://github.com/cert-manager/webhook-example)
