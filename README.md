@@ -33,7 +33,7 @@ helm install cert-manager-dynu-webhook cert-manager-dynu-webhook/dynu-webhook
     The `secretName` can also be changed in `deploy/dynu-webhook/values.yaml` in case you have to follow some convention. 
     The secret must be created in the same namespace as the webhook.
 
-3. Create a Letsencrypt Account key using [acme.sh](https://github.com/acmesh-official/acme.sh)
+3. Create a Letsencrypt Account key using [acme.sh](https://github.com/acmesh-official/acme.sh):
 
      ```bash
      acme.sh --server letsencrypt --create-account-key
