@@ -35,7 +35,8 @@ helm install cert-manager-dynu-webhook cert-manager-dynu-webhook/dynu-webhook
 
 3. Create a Letsencrypt Account key using (acme.sh)[https://github.com/acmesh-official/acme.sh]
 
-     ```acme.sh --server letsencrypt --create-account-key
+     ```bash
+     acme.sh --server letsencrypt --create-account-key
      ```
 4. Create a secret to store the Letsencrypt key.
 
