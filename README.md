@@ -79,24 +79,41 @@ spec:
 
 ## Certificate
 
-Issuing a certificate:
+1. Create the certificate request file, openshift-ingress-letsencrypt-certificate.yaml:
 
 ```yaml
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: <CERTIFICATE_NAME>  # Replace with a name of your choice
-  namespace: default        # Set a namespace if required
+  name: ingress-letsencrypt-cert  # Replace with a name of your choice
+  namespace: openshift-ingress        # Set a namespace if required
 spec:
   commonName: "*.<YOUR_DOMAIN>" # Wildcard Entry for your domain
   dnsNames:
     - <YOUR_DOMAIN>         # List of all (sub)domains that you want to include in the cert
-    - "*.<YOUR_DOMAIN>"
+    - "*.<YOUR_DOMAIN>"     # This must match the commonName, above
   issuerRef:
     name: letsencrypt-dynu-<YOUR_ISSUER_NAME>   # This should match the issuer you defined earlier
     kind: ClusterIssuer
-  secretName: <SECRET_NAME> # Secret name where the resulting certificate is saved in
+  secretName: ingress-letsencrypt-cert # Secret name where the resulting certificate is saved in
 ```
+
+2. Submit the request:
+
+    ```bash
+    kubectl apply -f openshift-ingress-letsencrypt-certificate.yaml -n openshift-ingress
+    ```
+
+3. Monitor certificate creation progress by running the following command repeatedly.  The process can take between 5 and 10 minutes:
+
+    ```bash
+    kubectl get events --sort-by=.metadata.creationTimestamp -n openshift-ingress
+    ```
+4. Alternatively, 'watch' the progress using the following command:
+
+   ```bash
+   watch kubectl get certificates -n openshift-ingress
+   ```
 
 ## Development
 
