@@ -79,7 +79,7 @@ spec:
 
 ## Certificate
 
-1. Create the certificate request file, openshift-ingress-letsencrypt-certificate.yaml:
+1. Create the certificate creation file, openshift-ingress-letsencrypt-certificate.yaml:
 
 ```yaml
 apiVersion: cert-manager.io/v1
@@ -98,16 +98,16 @@ spec:
   secretName: ingress-letsencrypt-cert # Secret name where the resulting certificate is saved in
 ```
 
-2. Submit the request:
+2. Submit the certificate creation request:
 
     ```bash
     kubectl apply -f openshift-ingress-letsencrypt-certificate.yaml -n openshift-ingress
     ```
 
-3. Monitor certificate creation progress by running the following command repeatedly.  The process can take between 5 and 10 minutes:
+3. Monitor certificate creation progress by running the following command.  The process can take between 5 and 10 minutes to complete:
 
     ```bash
-    kubectl get events --sort-by=.metadata.creationTimestamp -n openshift-ingress
+    watch "kubectl get events --sort-by=.metadata.creationTimestamp -n openshift-ingress | tail -n15"
     ```
 4. Alternatively, 'watch' the progress using the following command:
 
@@ -116,7 +116,7 @@ spec:
    ```
 ## Use the Certificate
 
-1. Patch the openshift-ingress-operator to use the new certificate:
+1. Patch the openshift-ingress-operator to load the new certificate:
 
     ```bash
     kubectl patch --type=merge ingresscontrollers/default --patch '{"spec":{"defaultCertificate":{"name":"ingress-certs-letsencrypt"}}}' -n openshift-ingress
@@ -124,10 +124,10 @@ spec:
 2. Watch to ensure the router pod with the new cert has been started:
 
     ```bash
-    watch oc get pod -n openshift-ingress
+    watch kubectl get pod -n openshift-ingress
     ```
 
-3. Verify that the pod is using the new cert:
+3. Run the following command to verify that the pod is using the new cert (or browse to the URL and check the "lock" icon):
 
     ```bash
     openssl s_client -showcerts -servername console-openshift-console.apps.<cluster name>.<domain name> -connect console-openshift-console.apps.ocp49-022100.alchan.nasatam.support:443
