@@ -6,10 +6,12 @@ This is a webhook solver for [Dynu](https://www.dynu.com/).
 
 * tested with 0.13.0 (might also work for older versions)
 * tested with
-  - Cert-Manager v1.6.0 & 1.9.1 operator
+  - cert-manager v1.6.0
+  - cert-manager-operator 1.9.1 and 1.10.2
   - Kubernetes v1.21.1 / OpenShift 4.8.15 
   - Kubernetes v1.24.8
   - Kubernetes v1.25.4 / OpenShift 4.12.6 + cert-manager Operator for Red Hat OpenShift 1.10.2
+  - OpenShift 4.8.15 and 4.12.10
 
 ## Installation
 
@@ -24,17 +26,27 @@ helm install cert-manager-dynu-webhook cert-manager-dynu-webhook/dynu-webhook
 
 1. Generate an API Key at [Dynu](https://www.dynu.com/en-US/ControlPanel/APICredentials)
 
-2. Create a secret to store your application secret, secret needs to be in same namespace as cert-manager if using a clusterissuer. Issuer is namespace scoped so secret needs to be localised with issuer:
+2. Create a secret to store your dynu API key.  The secret needs to be in same namespace as cert-manager if using a ClusterIssuer. Issuer is namespace scoped so secret needs to be localised with issuer:
 
     ```bash
-    kubectl create secret generic dynu-secret -n '<cert-manager namespace>' \
-      --from-literal=api-key='<DYNU_API_KEY>'
+    kubectl create secret generic dynu-secret -n cert-manager --from-literal=api-key='<DYNU_API_KEY>'
     ```
 
     The `secretName` can also be changed in `deploy/dynu-webhook/values.yaml` in case you have to follow some convention. 
     The secret must be created in the same namespace as the webhook.
 
-3. Create a certificate issuer:
+3. Create a Letsencrypt Account key using [acme.sh](https://github.com/acmesh-official/acme.sh):
+
+     ```bash
+     acme.sh --server letsencrypt --create-account-key
+     ```
+4. Create a secret to store the Letsencrypt key.
+
+     ```bash
+     kubectl create secret generic letsencrypt-secret -n cert-manager --from-file=api-key=~/.acme.sh/ca/acme-v02.api.letsencrypt.org/directory/account.key
+     ```
+     
+5. Create a ClusterIssuer yaml file, letsencrypt-dynu-cluster-issuer.yaml:
 
 ```yaml
 apiVersion: cert-manager.io/v1
@@ -53,7 +65,7 @@ spec:
 
     # Name of a secret used to store the ACME account private key
     privateKeySecretRef:
-      name: <YOUR_SECRET_NAME>
+      name: letsencrypt-secret
 
     solvers:
       - dns01:
@@ -64,28 +76,67 @@ spec:
             config:
               secretName: dynu-secret # Adjust this in case you changed the secretName
 ```
+6. Create the ClusterIssuer:
+
+    ```
+    kubectl apply -f letsencrypt-dynu-cluster-issuer.yaml
 
 ## Certificate
 
-Issuing a certificate:
+1. Create the certificate creation file, openshift-ingress-letsencrypt-certificate.yaml:
 
 ```yaml
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: <CERTIFICATE_NAME>  # Replace with a name of your choice
-  namespace: default        # Set a namespace if required
+  name: ingress-letsencrypt-cert  # Replace with a name of your choice
+  namespace: openshift-ingress        # Set a namespace if required
 spec:
   commonName: "*.<YOUR_DOMAIN>" # Wildcard Entry for your domain
   dnsNames:
     - <YOUR_DOMAIN>         # List of all (sub)domains that you want to include in the cert
-    - "*.<YOUR_DOMAIN>"
+    - "*.<YOUR_DOMAIN>"     # This must match the commonName, above
   issuerRef:
     name: letsencrypt-dynu-<YOUR_ISSUER_NAME>   # This should match the issuer you defined earlier
     kind: ClusterIssuer
-  secretName: <SECRET_NAME> # Secret name where the resulting certificate is saved in
+  secretName: ingress-letsencrypt-cert # Secret name where the resulting certificate is saved in
 ```
 
+2. Submit the certificate creation request:
+
+    ```bash
+    kubectl apply -f openshift-ingress-letsencrypt-certificate.yaml -n openshift-ingress
+    ```
+
+3. Monitor certificate creation progress by running the following command.  The process can take between 5 and 10 minutes to complete:
+
+    ```bash
+    watch "kubectl get events --sort-by=.metadata.creationTimestamp -n openshift-ingress | tail -n15"
+    ```
+4. Alternatively, 'watch' the progress using the following command:
+
+   ```bash
+   watch kubectl get certificates -n openshift-ingress
+   ```
+## Use the Certificate
+
+1. Patch the openshift-ingress-operator to load the new certificate:
+
+    ```bash
+    kubectl patch --type=merge ingresscontrollers/default --patch '{"spec":{"defaultCertificate":{"name":"ingress-certs-letsencrypt"}}}' -n openshift-ingress
+    ```
+2. Watch to ensure the router pod with the new cert has been started:
+
+    ```bash
+    watch kubectl get pod -n openshift-ingress
+    ```
+
+3. Run the following command to verify that the pod is using the new cert (or browse to the URL and check the "lock" icon):
+
+    ```bash
+    openssl s_client -showcerts -servername console-openshift-console.apps.<cluster name>.<domain name> -connect console-openshift-console.apps.ocp49-022100.alchan.nasatam.support:443
+    ```
+    
 ## Development
 
 see [webhook-example](https://github.com/cert-manager/webhook-example)
