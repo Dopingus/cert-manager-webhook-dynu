@@ -71,7 +71,7 @@ spec:
       - dns01:
           cnameStrategy: Follow
           webhook:
-            groupName: com.github.dopingus.cert-manager-webhook-dynu
+            groupName: com.github.dopingus.cert-manager-dynu-webhook
             solverName: dynu
             config:
               secretName: dynu-secret # Adjust this in case you changed the secretName
