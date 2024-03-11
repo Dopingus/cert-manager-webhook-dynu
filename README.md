@@ -123,7 +123,7 @@ spec:
 1. Patch the openshift-ingress-operator to load the new certificate:
 
     ```bash
-    kubectl patch --type=merge ingresscontrollers/default --patch '{"spec":{"defaultCertificate":{"name":"ingress-certs-letsencrypt"}}}' -n openshift-ingress
+    kubectl patch --type=merge ingresscontrollers/default --patch '{"spec":{"defaultCertificate":{"name":"ingress-cert-letsencrypt"}}}' -n openshift-ingress
     ```
 2. Watch to ensure the router pod with the new cert has been started:
 
