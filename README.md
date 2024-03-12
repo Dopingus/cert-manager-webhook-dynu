@@ -19,7 +19,7 @@ This is a webhook solver for [Dynu](https://www.dynu.com/).
 helm repo add cert-manager-dynu-webhook \
  https://dopingus.github.io/cert-manager-webhook-dynu
 helm repo update
-helm install cert-manager-dynu-webhook cert-manager-dynu-webhook/dynu-webhook
+helm install cert-manager-dynu-webhook cert-manager-dynu-webhook/dynu-webhook -n cert-manager
 ```
 
 ## Certificate Issuer
