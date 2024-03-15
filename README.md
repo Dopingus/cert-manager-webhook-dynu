@@ -2,6 +2,10 @@
 
 This is a webhook solver for [Dynu](https://www.dynu.com/).
 
+## Update
+
+* cert-manager v1.13.1 (240315)
+
 ## Compatibility
 
 * tested with 0.13.0 (might also work for older versions)
@@ -11,7 +15,7 @@ This is a webhook solver for [Dynu](https://www.dynu.com/).
   - Kubernetes v1.21.1 / OpenShift 4.8.15 
   - Kubernetes v1.24.8
   - Kubernetes v1.25.4 / OpenShift 4.12.6 + cert-manager Operator for Red Hat OpenShift 1.10.2
-  - OpenShift 4.8.15 and 4.12.10
+  - Kubernetes v1.27.10 / OpenShift 4.14.11 + cert-manager Operator for Red Hat OpenShift 1.13.1
 
 ## Installation
 
