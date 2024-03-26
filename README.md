@@ -42,12 +42,12 @@ helm install cert-manager-dynu-webhook cert-manager-dynu-webhook/dynu-webhook -n
 3. Create a Letsencrypt Account key using [acme.sh](https://github.com/acmesh-official/acme.sh):
 
      ```bash
-     acme.sh --server letsencrypt --create-account-key
+     acme.sh --server letsencrypt --create-account-key -ak 4096
      ```
 4. Create a secret to store the Letsencrypt key.
 
      ```bash
-     kubectl create secret generic letsencrypt-secret -n cert-manager --from-file=api-key=~/.acme.sh/ca/acme-v02.api.letsencrypt.org/directory/account.key
+     kubectl create secret generic letsencrypt-secret -n cert-manager --from-file=tls.key=~/.acme.sh/ca/acme-v02.api.letsencrypt.org/directory/account.key
      ```
      
 5. Create a ClusterIssuer yaml file, letsencrypt-dynu-cluster-issuer.yaml:
